@@ -15,10 +15,14 @@ export default function Verify() {
 
     setLoading(true);
     try {
-      const res = await axios.post('https://arc-hives-backend.onrender.com/verify-article', { sha256 });
+      const res = await axios.post(
+        'https://arc-hives-backend.onrender.com/verify-article',
+        { sha256: sha256.trim() } // remove extra spaces
+      );
+      console.log('Verify response:', res.data); // DEBUG
       setResult(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Error verifying article:', err.response?.data || err.message); // DEBUG
       alert('Error verifying article');
       setResult(null);
     } finally {
@@ -28,24 +32,26 @@ export default function Verify() {
 
   const handleDownloadPDF = async () => {
     if (!sha256) return;
+    console.log('Sending SHA-256 for PDF:', sha256); // DEBUG
 
     try {
       const pdfRes = await axios.post(
         'https://arc-hives-backend.onrender.com/verify-article-pdf',
-        { sha256 },
+        { sha256: sha256.trim() },
         { responseType: 'blob' } // important for PDF
       );
 
+      console.log('PDF response received'); // DEBUG
       const url = window.URL.createObjectURL(new Blob([pdfRes.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `certificate_${result.certificate.article_id}.pdf`);
+      link.setAttribute('download', `certificate.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err);
-      alert('Error generating PDF certificate.');
+      console.error('Error generating PDF certificate:', err.response?.data || err.message); // DEBUG
+      alert('Error generating PDF certificate. Check console for details.');
     }
   };
 
@@ -67,7 +73,6 @@ export default function Verify() {
         <div style={{ marginTop: '20px' }}>
           <p><strong>Article Title:</strong> {result.certificate.title}</p>
           <p><strong>Article ID:</strong> {result.certificate.article_id}</p>
-          <p><strong>Verified At:</strong> {result.certificate.verified_at}</p>
           <p>{result.certificate.message}</p>
 
           <button onClick={handleDownloadPDF} style={{ marginTop: '10px' }}>
