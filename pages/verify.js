@@ -1,3 +1,4 @@
+// pages/verify.js
 import { useState } from 'react';
 import axios from 'axios';
 
@@ -10,14 +11,22 @@ export default function Verify() {
       const res = await axios.post('https://arc-hives-backend.onrender.com/verify-article', {
         sha256
       });
-      if (res.data.success) {
-        setResult(JSON.stringify(res.data.certificate, null, 2));
-      } else {
-        setResult('Verification failed.');
-      }
+      setResult(res.data);
     } catch (err) {
-      setResult('Error: ' + err.response?.data?.error || err.message);
+      setResult({ error: err.response?.data?.error || err.message });
     }
+  };
+
+  const downloadCertificate = () => {
+    if (!result.success) return;
+
+    const blob = new Blob([JSON.stringify(result.certificate, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `certificate_${result.certificate.article_id}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -32,7 +41,17 @@ export default function Verify() {
       />
       <br /><br />
       <button onClick={verifyArticle}>Verify</button>
-      <pre>{result}</pre>
+
+      {result && (
+        <>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+          {result.success && (
+            <button onClick={downloadCertificate} style={{ marginTop: 10 }}>
+              Download Certificate
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }
