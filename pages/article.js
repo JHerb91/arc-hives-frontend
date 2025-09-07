@@ -5,8 +5,10 @@ import { useRouter } from 'next/router';
 
 export default function Article() {
   const router = useRouter();
-  const { id } = router.query; // article id from URL
+  const { id } = router.query;
+
   const [article, setArticle] = useState(null);
+  const [comments, setComments] = useState([]);
 
   // Comment form state
   const [commentText, setCommentText] = useState('');
@@ -19,8 +21,13 @@ export default function Article() {
 
     const fetchArticle = async () => {
       try {
+        // Fetch article
         const res = await axios.get(`https://arc-hives-backend.onrender.com/article/${id}`);
         setArticle(res.data.article);
+
+        // Fetch comments
+        const commentsRes = await axios.get(`https://arc-hives-backend.onrender.com/comments/${id}`);
+        setComments(commentsRes.data.comments || []);
       } catch (err) {
         console.error(err);
       }
@@ -37,6 +44,10 @@ export default function Article() {
         citations_count: citationsCount,
         has_identifying_info: hasIdentifyingInfo
       });
+
+      // Update comment list immediately
+      setComments((prev) => [...prev, res.data.comment]);
+
       setResponse(JSON.stringify(res.data, null, 2));
       setCommentText('');
       setCitationsCount(0);
@@ -84,6 +95,25 @@ export default function Article() {
       <button onClick={submitComment}>Submit Comment</button>
 
       <pre>{response}</pre>
+
+      <hr style={{ margin: '20px 0' }} />
+
+      <h2>Comments</h2>
+      {comments.length === 0 ? (
+        <p>No comments yet.</p>
+      ) : (
+        comments.map((c) => (
+          <div key={c.id} style={{ borderBottom: '1px solid #ccc', padding: '10px 0' }}>
+            <p>
+              <strong>{c.commenter_name}</strong> ({c.citations_count} citations, {c.points} points)
+            </p>
+            <p>{c.comment}</p>
+            <p style={{ fontSize: '0.8em', color: '#555' }}>
+              {new Date(c.created_at).toLocaleString()}
+            </p>
+          </div>
+        ))
+      )}
     </div>
   );
 }
