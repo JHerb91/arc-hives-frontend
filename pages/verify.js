@@ -67,7 +67,6 @@ export default function Verify() {
         <div style={{ marginTop: '20px' }}>
           <p><strong>Article Title:</strong> {result.certificate.title}</p>
           <p><strong>Article ID:</strong> {result.certificate.article_id}</p>
-          <p><strong>Certificate ID:</strong> {result.certificate.certificate_id}</p>
           <p><strong>Verified At:</strong> {result.certificate.verified_at}</p>
           <p>{result.certificate.message}</p>
 
