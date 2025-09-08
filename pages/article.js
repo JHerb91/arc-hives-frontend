@@ -47,21 +47,13 @@ export default function ArticlePage() {
       <p className="mb-8">{article.content}</p>
 
       <h2 className="text-xl font-semibold mb-2">Comments</h2>
-      {comments.length === 0 ? (
-        <p>No comments yet.</p>
-      ) : (
-        <ul className="space-y-2">
-          {comments.map((c) => (
-            <li
-              key={c.id}
-              className="border rounded-lg p-3 shadow-sm bg-gray-50"
-            >
-              <p>{c.text}</p>
-              <span className="text-xs text-gray-500">
-                {new Date(c.created_at).toLocaleString()}
-              </span>
-            </li>
-          ))}
+      {comments.map(c => (
+  <li key={c.id}>
+    <small>{new Date(c.created_at).toLocaleString()}</small>
+    <p>{c.content}</p>
+  </li>
+))}
+
         </ul>
       )}
     </div>
