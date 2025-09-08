@@ -15,10 +15,10 @@ export default function Article() {
 
     const fetchArticle = async () => {
       try {
-        const res = await axios.get(
-          `https://arc-hives-backend.onrender.com/article?id=${id}`
-        );
-        setArticle(res.data.article);
+        const res = await axios.get(`https://arc-hives-backend.onrender.com/article?id=${id}`);
+setArticle(res.data); // use res.data directly
+setComments([]); // no comments yet, or fetch separately later
+
         setComments(res.data.comments || []);
       } catch (err) {
         console.error('Error fetching article:', err);
