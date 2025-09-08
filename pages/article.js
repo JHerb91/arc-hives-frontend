@@ -1,94 +1,198 @@
+// pages/article.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 
-export default function Article() {
+const BACKEND = 'https://arc-hives-backend.onrender.com';
+
+export default function ArticlePage() {
   const router = useRouter();
   const { id } = router.query;
 
   const [article, setArticle] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [commenting, setCommenting] = useState(false);
+  const [form, setForm] = useState({
+    commenter_name: '',
+    comment: '',
+    citations_count: 0,
+    has_identifying_info: false,
+  });
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
 
-    const fetchArticle = async () => {
+    const fetchAll = async () => {
+      setLoading(true);
+      setMessage('');
       try {
-        const res = await axios.get(`https://arc-hives-backend.onrender.com/article?id=${id}`);
-setArticle(res.data); // use res.data directly
-setComments([]); // no comments yet, or fetch separately later
+        // fetch article (backend returns article object)
+        const aRes = await axios.get(`${BACKEND}/article?id=${encodeURIComponent(id)}`);
+        setArticle(aRes.data);
 
-        setComments(res.data.comments || []);
+        // fetch comments
+        const cRes = await axios.get(`${BACKEND}/articles/${encodeURIComponent(id)}/comments`);
+        // accept array or supabase wrapper
+        let cData = [];
+        if (Array.isArray(cRes.data)) cData = cRes.data;
+        else if (Array.isArray(cRes.data.comments)) cData = cRes.data.comments;
+        else if (Array.isArray(cRes.data.data)) cData = cRes.data.data;
+        setComments(cData || []);
       } catch (err) {
-        console.error('Error fetching article:', err);
+        console.error('Error fetching article/comments:', err);
+        setMessage('Error loading article or comments.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchArticle();
+    fetchAll();
+    return () => { cancelled = true; };
   }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (!article) return <p>Article not found.</p>;
+  const handleChange = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    if (!id) return setMessage('No article selected');
+    if (!form.comment || form.comment.trim().length < 3) return setMessage('Comment is too short.');
+
+    setCommenting(true);
+    try {
+      const payload = {
+        article_id: id,
+        commenter_name: form.commenter_name || 'Anonymous',
+        comment: form.comment,
+        citations_count: Number(form.citations_count) || 0,
+        has_identifying_info: !!form.has_identifying_info,
+      };
+
+      const res = await axios.post(`${BACKEND}/add-comment`, payload);
+
+      if (res.data && res.data.success) {
+        // Append the returned comment to UI
+        const newComment = res.data.comment;
+        // If backend returned created_at, good; otherwise set it now
+        if (!newComment.created_at) newComment.created_at = new Date().toISOString();
+
+        setComments(prev => [...prev, newComment]);
+
+        // Update article points in UI if returned points
+        if (typeof res.data.points === 'number') {
+          setArticle(prev => ({ ...prev, points: Number((prev?.points || 0) + res.data.points).toFixed(2) }));
+        } else {
+          // optionally, refetch article to get accurate points
+        }
+
+        // Clear form
+        setForm({ commenter_name: '', comment: '', citations_count: 0, has_identifying_info: false });
+        setMessage('Comment posted.');
+      } else {
+        console.warn('Add-comment returned unexpected response:', res.data);
+        setMessage('Failed to post comment.');
+      }
+    } catch (err) {
+      console.error('Error posting comment:', err.response?.data || err);
+      setMessage('Error posting comment. See console.');
+    } finally {
+      setCommenting(false);
+    }
+  };
+
+  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (!article) return <div style={{ padding: 20 }}>Article not found.</div>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>{article.title}</h1>
-      {article.content && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Content</h3>
-          <p>{article.content}</p>
+    <div style={{ padding: 20, maxWidth: 900, margin: '0 auto' }}>
+      <h1 style={{ fontSize: '1.8rem', marginBottom: 8 }}>{article.title}</h1>
+
+      {article.points !== undefined && (
+        <div style={{ marginBottom: 12 }}>
+          <strong>Points:</strong> {article.points}
         </div>
       )}
 
-      <div style={{ marginTop: 40 }}>
-        <h3>Comments</h3>
-        {comments.length === 0 && <p>No comments yet.</p>}
-        <ul>
-          {comments.map((c, i) => {
-            const body =
-              c.comment ??
-              c.content ??
-              c.text ??
-              c.body ??
-              '';
-
-            const commenter =
-              c.commenter_name ??
-              c.commenter ??
-              c.name ??
-              (c.anonymous ? 'Anonymous' : 'Anonymous');
-
-            const createdAt =
-              c.created_at ??
-              c.createdAt ??
-              c.createdAtTimestamp ??
-              c.created;
-
-            const createdDisplay = createdAt
-              ? new Date(createdAt).toLocaleString()
-              : '';
-
-            const citations = c.citations_count ?? c.citations ?? 0;
-            const points = c.points ?? c.point ?? 0;
-
-            return (
-              <li key={i} style={{ marginBottom: 20 }}>
-                <p>{body}</p>
-                <small>
-                  By {commenter} {createdDisplay && `on ${createdDisplay}`}
-                </small>
-                <br />
-                <small>
-                  Citations: {citations} | Points: {points}
-                </small>
-              </li>
-            );
-          })}
-        </ul>
+      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 24 }}>
+        {article.content}
       </div>
+
+      <hr style={{ margin: '24px 0' }} />
+
+      <section style={{ marginBottom: 24 }}>
+        <h2 style={{ marginBottom: 8 }}>Post a comment</h2>
+
+        <form onSubmit={handleSubmitComment} style={{ display: 'grid', gap: 8 }}>
+          <input
+            placeholder="Your name (optional)"
+            value={form.commenter_name}
+            onChange={(e) => handleChange('commenter_name', e.target.value)}
+            style={{ padding: 8 }}
+          />
+          <textarea
+            placeholder="Your comment"
+            value={form.comment}
+            onChange={(e) => handleChange('comment', e.target.value)}
+            rows={4}
+            style={{ padding: 8 }}
+          />
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <label>
+              Citations:
+              <input
+                type="number"
+                min="0"
+                value={form.citations_count}
+                onChange={(e) => handleChange('citations_count', e.target.value)}
+                style={{ width: 80, marginLeft: 8 }}
+              />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="checkbox"
+                checked={form.has_identifying_info}
+                onChange={(e) => handleChange('has_identifying_info', e.target.checked)}
+              />
+              I include identifying info
+            </label>
+            <div style={{ marginLeft: 'auto' }}>
+              <button type="submit" disabled={commenting}>{commenting ? 'Posting…' : 'Post comment'}</button>
+            </div>
+          </div>
+        </form>
+
+        {message && <p style={{ marginTop: 8 }}>{message}</p>}
+      </section>
+
+      <section>
+        <h2>Comments ({comments.length})</h2>
+        {comments.length === 0 ? <p>No comments yet.</p> : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {comments.map((c) => {
+              const body = c.comment ?? c.content ?? c.text ?? '';
+              const commenter = c.commenter_name ?? c.commenter ?? 'Anonymous';
+              const createdAt = c.created_at ?? c.createdAt ?? null;
+              const createdDisplay = createdAt ? new Date(createdAt).toLocaleString() : '';
+              const citations = c.citations_count ?? c.citations ?? 0;
+              const points = c.points ?? 0;
+
+              return (
+                <div key={c.id ?? `${createdAt}-${Math.random()}`} style={{ border: '1px solid #e6e6e6', padding: 12, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <strong>{commenter}</strong>
+                    <small style={{ color: '#666' }}>{createdDisplay}</small>
+                  </div>
+                  <div style={{ whiteSpace: 'pre-wrap', marginBottom: 8 }}>{body}</div>
+                  <div style={{ fontSize: '0.9rem', color: '#333' }}>Citations: {citations} — Points: {Number(points).toFixed(2)}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
