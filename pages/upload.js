@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import crypto from 'crypto';
 
 export default function Upload() {
   const [title, setTitle] = useState('');
@@ -7,37 +8,38 @@ export default function Upload() {
   const [hash, setHash] = useState('');
   const [message, setMessage] = useState('');
 
-  const computeSHA256 = async (text) => {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(buf))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  };
-
   const handleSubmit = async () => {
-    setMessage('');
-    setHash('');
+    if (!title || !content) {
+      setMessage('Please enter both title and content.');
+      return;
+    }
+
+    // Generate SHA-256 hash of content
+    const sha256 = crypto.createHash('sha256').update(content).digest('hex');
 
     try {
-      const sha256Hash = await computeSHA256(title + content);
-
       const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
         title,
         content,
-        sha256: sha256Hash
+        sha256
       });
 
-      if (res.data.success) {
-        setHash(sha256Hash);
+      if (res.data.duplicate) {
+        setMessage('Article already exists. Upload skipped.');
+        setHash(''); // Do not show hash for duplicates
+      } else if (res.data.success) {
         setMessage('Upload successful!');
-      } else if (res.data.duplicate) {
-        setMessage('Article already exists. Upload not saved.');
+        setHash(res.data.article.sha256);
+        setTitle('');
+        setContent('');
       } else {
-        setMessage('Upload failed.');
+        setMessage('Upload failed. ' + (res.data.message || ''));
+        setHash('');
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setMessage('Upload failed due to server error.');
+      setMessage('Server error during upload.');
+      setHash('');
     }
   };
 
@@ -53,10 +55,14 @@ export default function Upload() {
         placeholder="Content"
         value={content}
         onChange={e => setContent(e.target.value)}
+        rows={10}
+        cols={50}
       /><br /><br />
       <button onClick={handleSubmit}>Upload</button>
       {message && <p>{message}</p>}
-      {hash && <p>Your SHA-256 hash: {hash}</p>}
+      {hash && (
+        <p>Your SHA-256 hash: <code>{hash}</code></p>
+      )}
     </div>
   );
 }
