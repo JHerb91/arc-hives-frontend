@@ -36,9 +36,9 @@ setComments([]); // no comments yet, or fetch separately later
   return (
     <div style={{ padding: 20 }}>
       <h1>{article.title}</h1>
-      <p>
+      /*<p>
         <strong>SHA-256:</strong> {article.sha256}
-      </p>
+      */</p>
       {article.content && (
         <div style={{ marginTop: 20 }}>
           <h3>Content</h3>
