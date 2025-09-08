@@ -1,40 +1,39 @@
 import { useState } from 'react';
 import axios from 'axios';
-import CryptoJS from 'crypto-js';
 
 export default function Upload() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [hash, setHash] = useState('');
+  const [message, setMessage] = useState('');
 
   const handleSubmit = async () => {
-    if (!title || !content) {
-      alert('Please enter both a title and content.');
-      return;
-    }
-
-    const sha256Hash = CryptoJS.SHA256(content).toString();
+    setMessage('');
+    setHash('');
 
     try {
-      const res = await axios.post(
-        'https://arc-hives-backend.onrender.com/upload',
-        { title, content, sha256: sha256Hash }
-      );
+      const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
+        title,
+        content,
+        sha256: crypto.subtle.digest('SHA-256', new TextEncoder().encode(content + title)).then(buf => {
+          return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        })
+      });
+
+      // Wait for the SHA-256 promise to resolve
+      const sha256Hash = await res.data.sha256 || '';
 
       if (res.data.success) {
-        setHash(res.data.article.sha256);
-        alert('Upload successful!');
+        setHash(sha256Hash);
+        setMessage('Upload successful!');
       } else if (res.data.duplicate) {
-        setHash(''); // don’t reveal hash on duplicate
-        alert('Article already exists. Hash not revealed for security.');
+        setMessage('Article already exists. Upload not saved.');
       } else {
-        setHash('');
-        alert('Upload failed. Please try again.');
+        setMessage('Upload failed.');
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setHash('');
-      alert('Upload failed. Please check the console for details.');
+      setMessage('Upload failed due to server error.');
     }
   };
 
@@ -44,21 +43,16 @@ export default function Upload() {
       <input
         placeholder="Title"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={e => setTitle(e.target.value)}
       /><br /><br />
       <textarea
         placeholder="Content"
         value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={10}
-        cols={50}
+        onChange={e => setContent(e.target.value)}
       /><br /><br />
       <button onClick={handleSubmit}>Upload</button>
-      {hash && (
-        <p>
-          Your SHA-256 hash: <strong>{hash}</strong>
-        </p>
-      )}
+      {message && <p>{message}</p>}
+      {hash && <p>Your SHA-256 hash: {hash}</p>}
     </div>
   );
 }
