@@ -8,15 +8,33 @@ export default function Upload() {
   const [message, setMessage] = useState('');
   const [duplicate, setDuplicate] = useState(false);
 
+  // Function to generate SHA-256 hash from text
+  async function generateSHA256(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  }
+
   const handleSubmit = async () => {
     setMessage('');
     setHash('');
     setDuplicate(false);
 
+    if (!title || !content) {
+      setMessage('Please enter both title and content.');
+      return;
+    }
+
     try {
+      // Generate SHA-256 from article content
+      const sha256 = await generateSHA256(content);
+
       const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
         title,
-        sha256: content // or however you generate SHA-256 on frontend
+        sha256
       });
 
       if (res.data.duplicate) {
@@ -44,6 +62,8 @@ export default function Upload() {
         placeholder="Content"
         value={content}
         onChange={e => setContent(e.target.value)}
+        rows={10}
+        cols={50}
       /><br /><br />
       <button onClick={handleSubmit}>Upload</button>
       {message && <p>{message}</p>}
