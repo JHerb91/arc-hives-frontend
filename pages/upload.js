@@ -7,21 +7,25 @@ export default function Upload() {
   const [hash, setHash] = useState('');
   const [message, setMessage] = useState('');
 
+  const computeSHA256 = async (text) => {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  };
+
   const handleSubmit = async () => {
     setMessage('');
     setHash('');
 
     try {
+      const sha256Hash = await computeSHA256(title + content);
+
       const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
         title,
         content,
-        sha256: crypto.subtle.digest('SHA-256', new TextEncoder().encode(content + title)).then(buf => {
-          return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        })
+        sha256: sha256Hash
       });
-
-      // Wait for the SHA-256 promise to resolve
-      const sha256Hash = await res.data.sha256 || '';
 
       if (res.data.success) {
         setHash(sha256Hash);
