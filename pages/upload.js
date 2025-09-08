@@ -6,38 +6,29 @@ export default function Upload() {
   const [content, setContent] = useState('');
   const [hash, setHash] = useState('');
   const [message, setMessage] = useState('');
+  const [duplicate, setDuplicate] = useState(false);
 
   const handleSubmit = async () => {
-    try {
-      // Compute SHA-256 hash of the content
-      const encoded = new TextEncoder().encode(content);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-      const hashHex = Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+    setMessage('');
+    setHash('');
+    setDuplicate(false);
 
-      // Send to backend
+    try {
       const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
         title,
-        sha256: hashHex
+        sha256: content // or however you generate SHA-256 on frontend
       });
 
-      console.log('Backend response:', res.data); // For debugging
-
-      if (res.data && res.data.article) {
-        setHash(res.data.article.sha256);
-
-        if (res.data.duplicate) {
-          setMessage('Article already exists. Returning existing record.');
-        } else {
-          setMessage('Upload successful!');
-        }
-      } else {
-        setMessage('Upload succeeded but response format unexpected.');
+      if (res.data.duplicate) {
+        setMessage('Article already exists.');
+        setDuplicate(true);
+      } else if (res.data.success) {
+        setMessage('Upload successful!');
+        setHash(res.data.hash); // only show hash for new uploads
       }
     } catch (err) {
-      console.error(err);
-      setMessage('Upload failed. See console for details.');
+      console.error('Upload error:', err);
+      setMessage('Upload failed.');
     }
   };
 
@@ -55,8 +46,8 @@ export default function Upload() {
         onChange={e => setContent(e.target.value)}
       /><br /><br />
       <button onClick={handleSubmit}>Upload</button>
-      {hash && <p>Your SHA-256 hash: {hash}</p>}
       {message && <p>{message}</p>}
+      {hash && !duplicate && <p>Your SHA-256 hash: {hash}</p>}
     </div>
   );
 }
