@@ -1,68 +1,95 @@
 import { useState } from 'react';
-import axios from 'axios';
-import crypto from 'crypto';
 
-export default function Upload() {
+export default function UploadPage() {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [hash, setHash] = useState('');
+  const [authors, setAuthors] = useState('');
+  const [link, setLink] = useState('');
+  const [file, setFile] = useState(null);
   const [message, setMessage] = useState('');
 
-  const handleSubmit = async () => {
-    if (!title || !content) {
-      setMessage('Please enter both title and content.');
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('Uploading...');
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('authors', authors);
+    formData.append('link', link);
+    if (file) {
+      formData.append('file', file);
     }
 
-    // Generate SHA-256 hash of content
-    const sha256 = crypto.createHash('sha256').update(content).digest('hex');
-
     try {
-      const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
-        title,
-        content,
-        sha256
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`, {
+        method: 'POST',
+        body: formData,
       });
 
-      if (res.data.duplicate) {
-        setMessage('Article already exists. Upload skipped.');
-        setHash(''); // Do not show hash for duplicates
-      } else if (res.data.success) {
+      if (res.ok) {
         setMessage('Upload successful!');
-        setHash(res.data.article.sha256);
-        setTitle('');
-        setContent('');
       } else {
-        setMessage('Upload failed. ' + (res.data.message || ''));
-        setHash('');
+        const errorText = await res.text();
+        setMessage(`Upload failed: ${errorText}`);
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setMessage('Server error during upload.');
-      setHash('');
+      setMessage('Upload failed due to network error.');
     }
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Upload Article</h1>
-      <input
-        placeholder="Title"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-      /><br /><br />
-      <textarea
-        placeholder="Content"
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        rows={10}
-        cols={50}
-      /><br /><br />
-      <button onClick={handleSubmit}>Upload</button>
-      {message && <p>{message}</p>}
-      {hash && (
-        <p>Your SHA-256 hash: <code>{hash}</code></p>
-      )}
+    <div className="p-6 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Upload Article</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block font-semibold">Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            className="w-full border rounded p-2"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold">Authors</label>
+          <input
+            type="text"
+            value={authors}
+            onChange={(e) => setAuthors(e.target.value)}
+            placeholder="Separate multiple authors with commas"
+            required
+            className="w-full border rounded p-2"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold">Original Publication Link</label>
+          <input
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://example.com"
+            className="w-full border rounded p-2"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold">Upload File</label>
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx,.txt"
+            onChange={(e) => setFile(e.target.files[0])}
+            required
+            className="w-full"
+          />
+        </div>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Upload
+        </button>
+      </form>
+      {message && <p className="mt-4">{message}</p>}
     </div>
   );
 }
