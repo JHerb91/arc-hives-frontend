@@ -18,11 +18,14 @@ export default function Upload() {
     const sha256 = crypto.createHash('sha256').update(content).digest('hex');
 
     try {
-      const res = await axios.post('https://arc-hives-backend.onrender.com/upload', {
-        title,
-        content,
-        sha256
-      });
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/upload`,
+        {
+          title,
+          content,
+          sha256
+        }
+      );
 
       if (res.data.duplicate) {
         setMessage('Article already exists. Upload skipped.');
