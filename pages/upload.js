@@ -21,6 +21,7 @@ export default function UploadPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!title || !file) {
       setMessage('Please provide a title and select a file.');
       return;
@@ -32,8 +33,10 @@ export default function UploadPage() {
       formData.append('authors', authors);
       formData.append('original_link', originalLink);
       formData.append('file', file);
+
+      // Append each bibliography item
       bibliography.forEach((b) => {
-        formData.append('bibliography', b);
+        if (b.trim()) formData.append('bibliography', b);
       });
 
       const res = await axios.post(
@@ -59,78 +62,65 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Upload Article</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
+      <h1>Upload Article</h1>
+      <form onSubmit={handleSubmit}>
         <div>
-          <label className="block font-semibold">Title</label>
+          <label>Title</label><br />
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full border rounded p-2"
+            style={{ width: '100%', marginBottom: 10 }}
           />
         </div>
         <div>
-          <label className="block font-semibold">Authors</label>
+          <label>Authors (comma separated)</label><br />
           <input
             type="text"
             value={authors}
             onChange={(e) => setAuthors(e.target.value)}
-            placeholder="Separate multiple authors with commas"
-            className="w-full border rounded p-2"
+            style={{ width: '100%', marginBottom: 10 }}
           />
         </div>
         <div>
-          <label className="block font-semibold">Original Publication Link</label>
+          <label>Original Publication Link (optional)</label><br />
           <input
             type="url"
             value={originalLink}
             onChange={(e) => setOriginalLink(e.target.value)}
-            placeholder="https://example.com"
-            className="w-full border rounded p-2"
+            style={{ width: '100%', marginBottom: 10 }}
           />
         </div>
         <div>
-          <label className="block font-semibold">Upload File</label>
+          <label>Upload File</label><br />
           <input
             type="file"
             accept=".pdf,.doc,.docx,.txt"
             onChange={(e) => setFile(e.target.files[0])}
             required
-            className="w-full"
+            style={{ width: '100%', marginBottom: 10 }}
           />
         </div>
         <div>
-          <label className="block font-semibold">Bibliography</label>
+          <label>Bibliography</label><br />
           {bibliography.map((b, idx) => (
             <input
               key={idx}
-              type="text"
               placeholder={`Source #${idx + 1}`}
               value={b}
               onChange={(e) => handleBibChange(idx, e.target.value)}
-              className="w-full border rounded p-2 mb-2"
+              style={{ display: 'block', width: '100%', marginBottom: 5 }}
             />
           ))}
-          <button
-            type="button"
-            onClick={addBibField}
-            className="px-3 py-1 bg-gray-500 text-white rounded"
-          >
+          <button type="button" onClick={addBibField} style={{ marginBottom: 10 }}>
             Add another source
           </button>
         </div>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Upload
-        </button>
+        <button type="submit">Upload</button>
       </form>
-      {message && <p className="mt-4">{message}</p>}
+      {message && <p style={{ marginTop: 10 }}>{message}</p>}
     </div>
   );
 }
-//trigger redeploy
