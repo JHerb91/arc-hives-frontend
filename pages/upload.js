@@ -1,39 +1,60 @@
 import { useState } from 'react';
+import axios from 'axios';
 
 export default function UploadPage() {
   const [title, setTitle] = useState('');
   const [authors, setAuthors] = useState('');
-  const [link, setLink] = useState('');
+  const [originalLink, setOriginalLink] = useState('');
   const [file, setFile] = useState(null);
+  const [bibliography, setBibliography] = useState(['']);
   const [message, setMessage] = useState('');
+
+  const handleBibChange = (index, value) => {
+    const newBib = [...bibliography];
+    newBib[index] = value;
+    setBibliography(newBib);
+  };
+
+  const addBibField = () => {
+    setBibliography([...bibliography, '']);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('Uploading...');
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('authors', authors);
-    formData.append('link', link);
-    if (file) {
-      formData.append('file', file);
+    if (!title || !file) {
+      setMessage('Please provide a title and select a file.');
+      return;
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`, {
-        method: 'POST',
-        body: formData,
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('authors', authors);
+      formData.append('original_link', originalLink);
+      formData.append('file', file);
+      bibliography.forEach((b) => {
+        formData.append('bibliography', b);
       });
 
-      if (res.ok) {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      if (res.data.success) {
         setMessage('Upload successful!');
+        setTitle('');
+        setAuthors('');
+        setOriginalLink('');
+        setFile(null);
+        setBibliography(['']);
       } else {
-        const errorText = await res.text();
-        setMessage(`Upload failed: ${errorText}`);
+        setMessage('Upload failed: ' + (res.data.error || 'Unknown error'));
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setMessage('Upload failed due to network error.');
+      setMessage('Server error during upload.');
     }
   };
 
@@ -58,7 +79,6 @@ export default function UploadPage() {
             value={authors}
             onChange={(e) => setAuthors(e.target.value)}
             placeholder="Separate multiple authors with commas"
-            required
             className="w-full border rounded p-2"
           />
         </div>
@@ -66,8 +86,8 @@ export default function UploadPage() {
           <label className="block font-semibold">Original Publication Link</label>
           <input
             type="url"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
+            value={originalLink}
+            onChange={(e) => setOriginalLink(e.target.value)}
             placeholder="https://example.com"
             className="w-full border rounded p-2"
           />
@@ -81,6 +101,26 @@ export default function UploadPage() {
             required
             className="w-full"
           />
+        </div>
+        <div>
+          <label className="block font-semibold">Bibliography</label>
+          {bibliography.map((b, idx) => (
+            <input
+              key={idx}
+              type="text"
+              placeholder={`Source #${idx + 1}`}
+              value={b}
+              onChange={(e) => handleBibChange(idx, e.target.value)}
+              className="w-full border rounded p-2 mb-2"
+            />
+          ))}
+          <button
+            type="button"
+            onClick={addBibField}
+            className="px-3 py-1 bg-gray-500 text-white rounded"
+          >
+            Add another source
+          </button>
         </div>
         <button
           type="submit"
