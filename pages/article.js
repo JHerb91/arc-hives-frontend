@@ -134,16 +134,14 @@ export default function ArticlePage() {
               title="Article PDF"
             />
           )}
-          {isWord && (
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'block', marginTop: 10 }}
-            >
-              Open Word Document
-            </a>
-          )}
+          {article.file_url && (
+  <div style={{ marginBottom: 16 }}>
+    <a href={article.file_url} target="_blank" rel="noopener noreferrer">
+      Open Document
+    </a>
+  </div>
+)}
+
         </div>
       )}
 
