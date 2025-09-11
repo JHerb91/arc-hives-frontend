@@ -108,7 +108,8 @@ export default function ArticlePage() {
   if (!article) return <div style={{ padding: 20 }}>Article not found.</div>;
 
   // ✅ Build a full public URL for the stored file
-  const publicUrl = article.file_url ? `${SUPABASE_PUBLIC_URL}/${article.file_url}` : null;
+  const publicUrl = article.file_url?.startsWith('http') ? article.file_url : `https://${article.file_url}`;
+
   const isPDF = article.file_url?.toLowerCase().endsWith('.pdf');
   const isWord =
     article.file_url?.toLowerCase().endsWith('.docx') ||
