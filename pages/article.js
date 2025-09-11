@@ -120,30 +120,31 @@ export default function ArticlePage() {
       )}
 
       <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 24 }}>
-        {article.content}
-      </div>
+  {article.content}
+</div>
 
-      {publicUrl && (
-        <div style={{ marginBottom: 24 }}>
-          <h3>Article File</h3>
-          {isPDF && (
-            <iframe
-              src={publicUrl}
-              width="100%"
-              height="600px"
-              title="Article PDF"
-            />
-          )}
-          {article.file_url && (
-  <div style={{ marginBottom: 16 }}>
-    <a href={article.file_url} target="_blank" rel="noopener noreferrer">
-      Open Document
-    </a>
+{article.file_url && (
+  <div style={{ marginBottom: 24 }}>
+    <h3>Article File</h3>
+
+    {article.file_url.endsWith('.pdf') && (
+      <iframe
+        src={article.file_url}
+        width="100%"
+        height="800"
+        style={{ border: 'none' }}
+        title="Article PDF"
+      />
+    )}
+
+    <div style={{ marginTop: 16 }}>
+      <a href={article.file_url} target="_blank" rel="noopener noreferrer">
+        Open Document
+      </a>
+    </div>
   </div>
 )}
 
-        </div>
-      )}
 
       <hr style={{ margin: '24px 0' }} />
 
