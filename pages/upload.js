@@ -19,47 +19,43 @@ export default function UploadPage() {
     setBibliography([...bibliography, '']);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+  if (!title || !file) {
+    setMessage('Please provide a title and select a file.');
+    return;
+  }
 
-    if (!title || !file) {
-      setMessage('Please provide a title and select a file.');
-      return;
+  try {
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('authors', authors);
+    formData.append('original_link', originalLink);
+    formData.append('file', file);
+    // Send bibliography as JSON string
+    formData.append('bibliography', JSON.stringify(bibliography));
+
+    const res = await axios.post(
+      'https://arc-hives-backend.onrender.com/upload',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+
+    if (res.data.success) {
+      setMessage('Upload successful!');
+      setTitle('');
+      setAuthors('');
+      setOriginalLink('');
+      setFile(null);
+      setBibliography(['']);
+    } else {
+      setMessage('Upload failed: ' + (res.data.error || 'Unknown error'));
     }
+  } catch (err) {
+    console.error('Upload error:', err);
+    setMessage('Server error during upload.');
+  }
+};
 
-    try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('authors', authors);
-      formData.append('original_link', originalLink);
-      formData.append('file', file);
-
-      // Append each bibliography item
-      bibliography.forEach((b) => {
-        if (b.trim()) formData.append('bibliography', b);
-      });
-
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`,
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
-
-      if (res.data.success) {
-        setMessage('Upload successful!');
-        setTitle('');
-        setAuthors('');
-        setOriginalLink('');
-        setFile(null);
-        setBibliography(['']);
-      } else {
-        setMessage('Upload failed: ' + (res.data.error || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error('Upload error:', err);
-      setMessage('Server error during upload.');
-    }
-  };
 
   return (
     <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
