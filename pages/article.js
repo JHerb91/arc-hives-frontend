@@ -35,6 +35,8 @@ export default function ArticlePage() {
       try {
         const aRes = await axios.get(`${BACKEND}/article?id=${encodeURIComponent(id)}`);
         setArticle(aRes.data);
+        console.log('Article from backend:', aRes.data);
+
 
         const cRes = await axios.get(`${BACKEND}/articles/${encodeURIComponent(id)}/comments`);
         let cData = [];
