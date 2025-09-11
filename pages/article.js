@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const BACKEND = 'https://arc-hives-backend.onrender.com';
+const SUPABASE_REF = 'https://ebghnxurosvklsdoryfg.supabase.co'; // replace with your Supabase project ref
+const SUPABASE_PUBLIC_URL = `https://${SUPABASE_REF}.supabase.co/storage/v1/object/public`;
 
 export default function ArticlePage() {
   const router = useRouter();
@@ -76,16 +78,12 @@ export default function ArticlePage() {
       if (res.data && res.data.success) {
         // Append the returned comment to UI
         const newComment = res.data.comment;
-        // If backend returned created_at, good; otherwise set it now
         if (!newComment.created_at) newComment.created_at = new Date().toISOString();
 
         setComments(prev => [...prev, newComment]);
 
-        // Update article points in UI if returned points
         if (typeof res.data.points === 'number') {
           setArticle(prev => ({ ...prev, points: Number((prev?.points || 0) + res.data.points).toFixed(2) }));
-        } else {
-          // optionally, refetch article to get accurate points
         }
 
         // Clear form
@@ -106,6 +104,11 @@ export default function ArticlePage() {
   if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
   if (!article) return <div style={{ padding: 20 }}>Article not found.</div>;
 
+  // Construct public file URL for embedding
+  const publicUrl = article.file_url ? `${SUPABASE_PUBLIC_URL}/${article.file_url}` : null;
+  const isPDF = article.file_url?.endsWith('.pdf');
+  const isWord = article.file_url?.endsWith('.docx') || article.file_url?.endsWith('.doc');
+
   return (
     <div style={{ padding: 20, maxWidth: 900, margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.8rem', marginBottom: 8 }}>{article.title}</h1>
@@ -119,6 +122,30 @@ export default function ArticlePage() {
       <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 24 }}>
         {article.content}
       </div>
+
+      {publicUrl && (
+        <div style={{ marginBottom: 24 }}>
+          <h3>Article File</h3>
+          {isPDF && (
+            <iframe
+              src={publicUrl}
+              width="100%"
+              height="600px"
+              title="Article PDF"
+            />
+          )}
+          {isWord && (
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', marginTop: 10 }}
+            >
+              Open Word Document
+            </a>
+          )}
+        </div>
+      )}
 
       <hr style={{ margin: '24px 0' }} />
 
