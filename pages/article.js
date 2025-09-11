@@ -107,16 +107,18 @@ export default function ArticlePage() {
   if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
   if (!article) return <div style={{ padding: 20 }}>Article not found.</div>;
 
-  // ✅ Build a full public URL for the stored file
-  // Construct fully qualified public file URL
-const publicUrl = article.file_url?.startsWith('http')
-  ? article.file_url
-  : `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${article.file_url}`;
+ // ✅ Build a full public URL for the stored file
+const publicUrl = article.file_url
+  ? article.file_url.startsWith('http')
+    ? article.file_url
+    : `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${encodeURIComponent(article.file_url)}`
+  : null;
 
-  const isPDF = article.file_url?.toLowerCase().endsWith('.pdf');
-  const isWord =
-    article.file_url?.toLowerCase().endsWith('.docx') ||
-    article.file_url?.toLowerCase().endsWith('.doc');
+const isPDF = article.file_url?.toLowerCase().endsWith('.pdf');
+const isWord =
+  article.file_url?.toLowerCase().endsWith('.docx') ||
+  article.file_url?.toLowerCase().endsWith('.doc');
+
 
   return (
     <div style={{ padding: 20, maxWidth: 900, margin: '0 auto' }}>
