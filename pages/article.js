@@ -111,7 +111,9 @@ export default function ArticlePage() {
 const publicUrl = article.file_url
   ? article.file_url.startsWith('http')
     ? article.file_url
-    : `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${encodeURIComponent(article.file_url)}`
+    : `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/articles/${encodeURIComponent(
+        article.file_url.replace(/^articles\//, '')
+      )}`
   : null;
 
 const isPDF = article.file_url?.toLowerCase().endsWith('.pdf');
