@@ -108,7 +108,10 @@ export default function ArticlePage() {
   if (!article) return <div style={{ padding: 20 }}>Article not found.</div>;
 
   // ✅ Build a full public URL for the stored file
-  const publicUrl = article.file_url?.startsWith('http') ? article.file_url : `https://${article.file_url}`;
+  // Construct fully qualified public file URL
+const publicUrl = article.file_url?.startsWith('http')
+  ? article.file_url
+  : `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${article.file_url}`;
 
   const isPDF = article.file_url?.toLowerCase().endsWith('.pdf');
   const isWord =
@@ -187,7 +190,7 @@ export default function ArticlePage() {
                 checked={form.has_identifying_info}
                 onChange={(e) => handleChange('has_identifying_info', e.target.checked)}
               />
-              I include identifying info
+              Include identifying info
             </label>
             <div style={{ marginLeft: 'auto' }}>
               <button type="submit" disabled={commenting}>
