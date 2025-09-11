@@ -6,7 +6,7 @@ import axios from 'axios';
 const BACKEND = 'https://arc-hives-backend.onrender.com';
 
 // 👇 your Supabase project ref (no protocol)
-const SUPABASE_PROJECT_REF = 'ebghnxurosvklsdoryfg';
+const SUPABASE_PROJECT_ID = 'ebghnxurosvklsdoryfg';
 const SUPABASE_PUBLIC_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public`;
 
 export default function ArticlePage() {
