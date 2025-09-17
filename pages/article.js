@@ -22,6 +22,9 @@ export default function ArticlePage() {
     comment: '',
     citations_count: 0,
     has_identifying_info: false,
+    member_id: '',
+    spend_points: '',
+    spend_direction: 'up',
   });
   const [message, setMessage] = useState('');
 
@@ -77,6 +80,20 @@ export default function ArticlePage() {
         has_identifying_info: !!form.has_identifying_info,
       };
 
+      // Optionally include spend fields if valid
+      const spendPointsNum = Number(form.spend_points);
+      const memberIdNum = form.member_id === '' ? null : Number(form.member_id);
+      const dir = (form.spend_direction || '').toLowerCase();
+      if (
+        memberIdNum != null && Number.isFinite(memberIdNum) &&
+        Number.isFinite(spendPointsNum) && spendPointsNum > 0 &&
+        (dir === 'up' || dir === 'down')
+      ) {
+        payload.member_id = memberIdNum;
+        payload.spend_points = spendPointsNum;
+        payload.spend_direction = dir;
+      }
+
       const res = await axios.post(`${BACKEND}/add-comment`, payload);
 
       if (res.data && res.data.success) {
@@ -87,10 +104,20 @@ export default function ArticlePage() {
         if (typeof res.data.points === 'number') {
           setArticle((prev) => ({
             ...prev,
-            points: Number((prev?.points || 0) + res.data.points).toFixed(2),
+            points: Number(
+              (Number(prev?.points || 0)) + Number(res.data.points || 0) + Number(res.data.spend_applied || 0)
+            ).toFixed(2),
           }));
         }
-        setForm({ commenter_name: '', comment: '', citations_count: 0, has_identifying_info: false });
+        setForm({
+          commenter_name: '',
+          comment: '',
+          citations_count: 0,
+          has_identifying_info: false,
+          member_id: '',
+          spend_points: '',
+          spend_direction: 'up',
+        });
         setMessage('Comment posted.');
       } else {
         console.warn('Add-comment returned unexpected response:', res.data);
@@ -202,6 +229,45 @@ const isWord =
               </button>
             </div>
           </div>
+
+          <fieldset style={{ marginTop: 12, padding: 12 }}>
+            <legend>Optionally spend your points to adjust rank</legend>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <label>
+                Member ID
+                <input
+                  type="number"
+                  value={form.member_id}
+                  onChange={(e) => handleChange('member_id', e.target.value)}
+                  placeholder="e.g., 123"
+                  style={{ marginLeft: 8, width: 120 }}
+                />
+              </label>
+              <label>
+                Spend Points
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.spend_points}
+                  onChange={(e) => handleChange('spend_points', e.target.value)}
+                  placeholder="e.g., 10"
+                  style={{ marginLeft: 8, width: 120 }}
+                />
+              </label>
+              <label>
+                Direction
+                <select
+                  value={form.spend_direction}
+                  onChange={(e) => handleChange('spend_direction', e.target.value)}
+                  style={{ marginLeft: 8 }}
+                >
+                  <option value="up">Up</option>
+                  <option value="down">Down</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
         </form>
 
         {message && <p style={{ marginTop: 8 }}>{message}</p>}
