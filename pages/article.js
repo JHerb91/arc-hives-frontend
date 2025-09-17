@@ -20,9 +20,8 @@ export default function ArticlePage() {
   const [form, setForm] = useState({
     commenter_name: '',
     comment: '',
-    citations_count: 0,
+    citations: '',
     has_identifying_info: false,
-    spend_points: '',
     spend_direction: 'up',
   });
   const [message, setMessage] = useState('');
@@ -62,6 +61,16 @@ export default function ArticlePage() {
 
   const handleChange = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  // Calculate points based on comment content
+  const calculatePoints = () => {
+    const commentLength = form.comment.length || 0;
+    const citationsArray = form.citations ? form.citations.split('\n').filter(c => c.trim()) : [];
+    const citationsCount = citationsArray.length;
+    const identifying = form.has_identifying_info ? 5 : 0;
+    
+    return Number(((commentLength / 100) + (citationsCount * 2) + identifying).toFixed(2));
+  };
+
   const handleSubmitComment = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -71,21 +80,18 @@ export default function ArticlePage() {
 
     setCommenting(true);
     try {
+      const citationsArray = form.citations ? form.citations.split('\n').filter(c => c.trim()) : [];
+      const calculatedPoints = calculatePoints();
+      
       const payload = {
         article_id: id,
         commenter_name: form.commenter_name || 'Anonymous',
         comment: form.comment,
-        citations_count: Number(form.citations_count) || 0,
+        citations: citationsArray,
         has_identifying_info: !!form.has_identifying_info,
+        spend_points: calculatedPoints,
+        spend_direction: form.spend_direction,
       };
-
-      // Optionally include spend fields if valid
-      const spendPointsNum = Number(form.spend_points);
-      const dir = (form.spend_direction || '').toLowerCase();
-      if (Number.isFinite(spendPointsNum) && spendPointsNum > 0 && (dir === 'up' || dir === 'down')) {
-        payload.spend_points = spendPointsNum;
-        payload.spend_direction = dir;
-      }
 
       const res = await axios.post(`${BACKEND}/add-comment`, payload);
 
@@ -105,9 +111,8 @@ export default function ArticlePage() {
         setForm({
           commenter_name: '',
           comment: '',
-          citations_count: 0,
+          citations: '',
           has_identifying_info: false,
-          spend_points: '',
           spend_direction: 'up',
         });
         setMessage('Comment posted.');
@@ -196,17 +201,20 @@ const isWord =
             rows={4}
             style={{ padding: 8 }}
           />
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div>
             <label>
-              Citations:
-              <input
-                type="number"
-                min="0"
-                value={form.citations_count}
-                onChange={(e) => handleChange('citations_count', e.target.value)}
-                style={{ width: 80, marginLeft: 8 }}
+              Citations (one per line, MLA or APA format):
+              <textarea
+                placeholder="Smith, John. 'Article Title.' Journal Name, vol. 1, no. 1, 2023, pp. 1-10.&#10;Doe, Jane. 'Another Source.' Book Title, Publisher, 2023."
+                value={form.citations}
+                onChange={(e) => handleChange('citations', e.target.value)}
+                rows={3}
+                style={{ width: '100%', padding: 8, marginTop: 4 }}
               />
             </label>
+          </div>
+          
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
                 type="checkbox"
@@ -223,20 +231,14 @@ const isWord =
           </div>
 
           <fieldset style={{ marginTop: 12, padding: 12 }}>
-            <legend>Optionally adjust rank</legend>
+            <legend>Rank adjustment (calculated from your comment)</legend>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <label>
-                Spend Points
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={form.spend_points}
-                  onChange={(e) => handleChange('spend_points', e.target.value)}
-                  placeholder="e.g., 10"
-                  style={{ marginLeft: 8, width: 120 }}
-                />
-              </label>
+              <div>
+                <strong>Calculated Points: {calculatePoints()}</strong>
+                <div style={{ fontSize: '0.9rem', color: '#666', marginTop: 4 }}>
+                  Based on: {form.comment.length} chars + {form.citations ? form.citations.split('\n').filter(c => c.trim()).length : 0} citations + {form.has_identifying_info ? '5' : '0'} identifying info
+                </div>
+              </div>
               <label>
                 Direction
                 <select
@@ -244,8 +246,8 @@ const isWord =
                   onChange={(e) => handleChange('spend_direction', e.target.value)}
                   style={{ marginLeft: 8 }}
                 >
-                  <option value="up">Up</option>
-                  <option value="down">Down</option>
+                  <option value="up">Up (+{calculatePoints()})</option>
+                  <option value="down">Down (-{calculatePoints()})</option>
                 </select>
               </label>
             </div>
@@ -266,7 +268,8 @@ const isWord =
               const commenter = c.commenter_name ?? c.commenter ?? 'Anonymous';
               const createdAt = c.created_at ?? c.createdAt ?? null;
               const createdDisplay = createdAt ? new Date(createdAt).toLocaleString() : '';
-              const citations = c.citations_count ?? c.citations ?? 0;
+              const citationsArray = Array.isArray(c.citations) ? c.citations : [];
+              const citationsCount = c.citations_count ?? citationsArray.length ?? 0;
               const points = c.points ?? 0;
 
               return (
@@ -279,8 +282,22 @@ const isWord =
                     <small style={{ color: '#666' }}>{createdDisplay}</small>
                   </div>
                   <div style={{ whiteSpace: 'pre-wrap', marginBottom: 8 }}>{body}</div>
+                  
+                  {citationsArray.length > 0 && (
+                    <div style={{ marginBottom: 8, padding: 8, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
+                      <strong>Citations:</strong>
+                      <ul style={{ margin: '4px 0 0 0', paddingLeft: 20 }}>
+                        {citationsArray.map((citation, idx) => (
+                          <li key={idx} style={{ fontSize: '0.9rem', marginBottom: 2 }}>
+                            {citation}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
                   <div style={{ fontSize: '0.9rem', color: '#333' }}>
-                    Citations: {citations} — Points: {Number(points).toFixed(2)}
+                    Citations: {citationsCount} — Points: {Number(points).toFixed(2)}
                   </div>
                 </div>
               );
