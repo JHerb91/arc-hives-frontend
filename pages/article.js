@@ -22,7 +22,6 @@ export default function ArticlePage() {
     comment: '',
     citations_count: 0,
     has_identifying_info: false,
-    member_id: '',
     spend_points: '',
     spend_direction: 'up',
   });
@@ -82,14 +81,8 @@ export default function ArticlePage() {
 
       // Optionally include spend fields if valid
       const spendPointsNum = Number(form.spend_points);
-      const memberIdNum = form.member_id === '' ? null : Number(form.member_id);
       const dir = (form.spend_direction || '').toLowerCase();
-      if (
-        memberIdNum != null && Number.isFinite(memberIdNum) &&
-        Number.isFinite(spendPointsNum) && spendPointsNum > 0 &&
-        (dir === 'up' || dir === 'down')
-      ) {
-        payload.member_id = memberIdNum;
+      if (Number.isFinite(spendPointsNum) && spendPointsNum > 0 && (dir === 'up' || dir === 'down')) {
         payload.spend_points = spendPointsNum;
         payload.spend_direction = dir;
       }
@@ -114,7 +107,6 @@ export default function ArticlePage() {
           comment: '',
           citations_count: 0,
           has_identifying_info: false,
-          member_id: '',
           spend_points: '',
           spend_direction: 'up',
         });
@@ -231,18 +223,8 @@ const isWord =
           </div>
 
           <fieldset style={{ marginTop: 12, padding: 12 }}>
-            <legend>Optionally spend your points to adjust rank</legend>
+            <legend>Optionally adjust rank</legend>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <label>
-                Member ID
-                <input
-                  type="number"
-                  value={form.member_id}
-                  onChange={(e) => handleChange('member_id', e.target.value)}
-                  placeholder="e.g., 123"
-                  style={{ marginLeft: 8, width: 120 }}
-                />
-              </label>
               <label>
                 Spend Points
                 <input
