@@ -22,6 +22,9 @@ export default function ArticlePage() {
     comment: '',
     citations: '',
     has_identifying_info: false,
+    identifying_name: '',
+    identifying_title: '',
+    identifying_organization: '',
     spend_direction: 'up',
   });
   const [message, setMessage] = useState('');
@@ -89,6 +92,9 @@ export default function ArticlePage() {
         comment: form.comment,
         citations: citationsArray,
         has_identifying_info: !!form.has_identifying_info,
+        identifying_name: form.has_identifying_info ? form.identifying_name : undefined,
+        identifying_title: form.has_identifying_info ? form.identifying_title : undefined,
+        identifying_organization: form.has_identifying_info ? form.identifying_organization : undefined,
         spend_points: calculatedPoints,
         spend_direction: form.spend_direction,
       };
@@ -223,12 +229,30 @@ const isWord =
               />
               Include identifying info
             </label>
-            <div style={{ marginLeft: 'auto' }}>
-              <button type="submit" disabled={commenting}>
-                {commenting ? 'Posting…' : 'Post comment'}
-              </button>
-            </div>
           </div>
+
+          {form.has_identifying_info && (
+            <div style={{ display: 'grid', gap: 8 }}>
+              <input
+                placeholder="Your full name"
+                value={form.identifying_name}
+                onChange={(e) => handleChange('identifying_name', e.target.value)}
+                style={{ padding: 8 }}
+              />
+              <input
+                placeholder="Your title"
+                value={form.identifying_title}
+                onChange={(e) => handleChange('identifying_title', e.target.value)}
+                style={{ padding: 8 }}
+              />
+              <input
+                placeholder="Your organization"
+                value={form.identifying_organization}
+                onChange={(e) => handleChange('identifying_organization', e.target.value)}
+                style={{ padding: 8 }}
+              />
+            </div>
+          )}
 
           <fieldset style={{ marginTop: 12, padding: 12 }}>
             <legend>Rank adjustment (calculated from your comment)</legend>
